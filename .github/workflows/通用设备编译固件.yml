@@ -5,8 +5,11 @@ on:
   workflow_dispatch:
 
 env:
+  # 这里精准锁定 padavanonly 的 MT798x 6.6 闭源驱动仓库
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_BRANCH: openwrt-24.10-6.6
+  # 你想要的 LAN 口 IP 地址，这里我默认填了 192.168.31.1，你可以随便改
+  NEW_LAN_IP: 192.168.31.1
   TZ: Asia/Shanghai
 
 jobs:
@@ -30,35 +33,45 @@ jobs:
           sudo -E apt-get clean
           sudo timedatectl set-timezone "${TZ}"
 
-      - name: 拉取闭源大本营源码
+      - name: 拉取源码
         run: |
           git clone -q --single-branch --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} openwrt
 
-      - name: 更新并安装插件包 (Feeds)
+      - name: 更新并安装 Feeds
         run: |
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+      - name: 【手术室】修改默认 LAN IP
+        run: |
+          cd openwrt
+          # 这一行命令会精准修改源码里的默认 IP 设定
+          sed -i "s/192.168.1.1/${NEW_LAN_IP}/g" package/base-files/files/bin/config_generate
+
       - name: 注入灵魂 (加载你的 .config)
         run: |
+          # 只要你上传的文件名叫 .config，它就会被移动到源码目录下生效
           [ -e .config ] && mv .config openwrt/.config
 
-      - name: 下载编译所需的依赖 (不再怕网络中断)
+      - name: 下载编译依赖包 (云端极速下载)
         run: |
           cd openwrt
           make defconfig
           make download -j8
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
 
       - name: 开启多核狂飙编译
         id: compile
         run: |
           cd openwrt
           echo -e "$(nproc) thread compile"
+          # 优先使用满血多核编译，失败自动切单核排错
           make -j$(($(nproc) + 1)) V=s || make -j1 || make -j1 V=s
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: 整理打包出的固件
+      - name: 整理固件文件
         id: organize
         if: steps.compile.outputs.status == 'success' && !cancelled()
         run: |
@@ -67,9 +80,9 @@ jobs:
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: 上传固件到 GitHub
+      - name: 上传固件到 Artifacts (成品在这里下)
         uses: actions/upload-artifact@main
         if: steps.organize.outputs.status == 'success' && !cancelled()
         with:
-          name: RAX3000M_Firmware_NAND
+          name: RAX3000M_ClosedSource_Firmware
           path: ${{ env.FIRMWARE }}
