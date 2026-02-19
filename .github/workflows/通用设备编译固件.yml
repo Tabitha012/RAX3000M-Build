@@ -9,7 +9,7 @@ env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_BRANCH: openwrt-24.10-6.6
   # 你想要的 LAN 口 IP 地址，这里我默认填了 192.168.31.1，你可以随便改
-  NEW_LAN_IP: 192.168.31.1
+  NEW_LAN_IP: 192.168.6.1
   TZ: Asia/Shanghai
 
 jobs:
