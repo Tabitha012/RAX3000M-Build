@@ -1,4 +1,4 @@
-name: RAX3000M 官方分支编译 (ImmortalWrt 24.10)
+name: 官方分支编译 (ImmortalWrt 24.10)
 
 on:
   repository_dispatch:
