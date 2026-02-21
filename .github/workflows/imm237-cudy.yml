@@ -1,4 +1,4 @@
-name: RAX3000M Immwrt237-cudy
+name: Immwrt237-cudy
 on:
   repository_dispatch:
   workflow_dispatch:
