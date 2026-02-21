@@ -1,4 +1,4 @@
-name: RAX3000M 闭源固件极速编译
+name: RAX3000M Imm237主分支
 
 on:
   repository_dispatch:
