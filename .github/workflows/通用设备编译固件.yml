@@ -7,7 +7,7 @@ on:
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
   REPO_BRANCH: cudy   # <--- 重点！就只改这几个字母
-  NEW_LAN_IP: 192.168.31.1
+  NEW_LAN_IP: 192.168.6.1
   TZ: Asia/Shanghai
 
 jobs:
