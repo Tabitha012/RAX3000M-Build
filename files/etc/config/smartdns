@@ -2,44 +2,26 @@ config smartdns
     option enabled '1'
     option port '6053'
     option tcp_server '1'
-
-    # 🚀 性能核心
     option cache_size '4096'
     option prefetch_domain '1'
     option serve_expired '1'
-
-    # 🚀 并发 & 响应优化
-    option response_mode 'fastest-ip'
-    option speed_check_mode 'ping,tcp:80,tcp:443'
     option dualstack_ip_selection '1'
-
-    # 🚫 防污染
+    option speed_check_mode 'ping,tcp:80,tcp:443'
+    option response_mode 'fastest-ip'
     option force_aaaa_soa '1'
-    option bogus_nxdomain '0.0.0.0/8'
 
-    # 🚀 并发关键（隐藏性能点）
-    option max_server_failures '3'
-    option server_retry_time '1000'
-    option tcp_idle_time '30'
-
-# 🇨🇳 国内 DNS（低延迟）
 config server
     option name 'AliDNS'
     option ip '223.5.5.5'
-    option speed_check_mode 'ping'
 
 config server
     option name 'TencentDNS'
     option ip '119.29.29.29'
-    option speed_check_mode 'ping'
 
-# 🌍 国外 DNS（抗污染）
 config server
     option name 'Cloudflare'
     option ip '1.1.1.1'
-    option speed_check_mode 'tcp:443'
 
 config server
     option name 'Google'
     option ip '8.8.8.8'
-    option speed_check_mode 'tcp:443'
