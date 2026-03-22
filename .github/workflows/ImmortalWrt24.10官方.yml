@@ -42,6 +42,12 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
+      - name: 运行 diy2 自定义脚本
+        run: |
+          cd openwrt
+          # 确保脚本有执行权限并运行（即使脚本不存在也不会中断流程）
+          [ -f ../scripts/diy2.sh ] && chmod +x ../scripts/diy2.sh && bash ../scripts/diy2.sh || echo "未找到 diy2.sh，跳过"
+
       - name: 修改默认 LAN IP
         run: |
           cd openwrt
@@ -50,6 +56,15 @@ jobs:
       - name: 加载纯净版 .config
         run: |
           [ -e .config ] && mv .config openwrt/.config
+
+      - name: 集成自定义 files 文件夹 (如果存在)
+        run: |
+          if [ -d "files" ]; then
+            cp -a files openwrt/files
+            echo "自定义 files 文件夹已成功注入。"
+          else
+            echo "未检测到 files 文件夹，跳过注入。"
+          fi
 
       - name: 下载依赖包
         run: |
