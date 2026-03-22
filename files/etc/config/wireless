@@ -1,1 +1,15 @@
+config wifi-iface
+    option device 'radio0'
+    option network 'lan'
+    option mode 'ap'
+    option ssid 'immortalwrt2.4'
+    option encryption 'sae-mixed'
+    option key 'sudo-i123'
 
+config wifi-iface
+    option device 'radio1'
+    option network 'lan'
+    option mode 'ap'
+    option ssid 'immortalwrt5.0'
+    option encryption 'sae-mixed'
+    option key 'sudo-i123'
