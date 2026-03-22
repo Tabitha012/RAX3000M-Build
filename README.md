@@ -12,18 +12,6 @@
 - lienol源码：  https://github.com/Lienol/openwrt 
 
 - immortalwrt源码： https://github.com/immortalwrt/immortalwrt
-
-### 操作教程由“实用技能”提供 @shiyongjineng
-
-#### 观看视频教程↓↓点击下方↓↓进行观看！
-
-[![从零开始：自己编译OpenWrt系统！一个视频就够了！](https://res.cloudinary.com/marcomontalbano/image/upload/v1692411463/video_to_markdown/images/youtube--_3B-y73JRQ4-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/_3B-y73JRQ4 "从零开始：自己编译OpenWrt系统！一个视频就够了！")
-
-[![openwrt在线编译教程](https://res.cloudinary.com/marcomontalbano/image/upload/v1692156705/video_to_markdown/images/youtube--6j4ofS0GT38-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://www.youtube.com/watch?v=6j4ofS0GT38 "openwrt在线编译教程")
-
-[![电视盒子专用：利用Flippy内核工具打包，将OpenWrt固件转成img镜像文件，](https://res.cloudinary.com/marcomontalbano/image/upload/v1692927730/video_to_markdown/images/youtube--EPNsHRj3eXE-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/EPNsHRj3eXE "电视盒子专用：利用Flippy内核工具打包，将OpenWrt固件转成img镜像文件，")
-
-
 ## 使用方法
 
 1，注册账号
