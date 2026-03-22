@@ -1,4 +1,0 @@
-config interface 'wan'
-    option proto 'dhcp'
-    option peerdns '0'
-    list dns '127.0.0.1'
