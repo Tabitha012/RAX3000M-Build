@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：开盖即食 + 稳定不炸 + DNS 绝对接管
+# 核心目标：开盖即食 + 稳定不炸 + DNS 绝对接管 + WiFi 鸡血优化
 # ==========================================
 
 # 1. 编译期直接修改默认 LAN IP (最稳妥的改法，防止开机后网段冲突)
@@ -18,8 +18,9 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ==========================================
-# 一、WiFi 开盖即食配置
+# 一、WiFi 开盖即食 & 鸡血配置
 # ==========================================
+# 基础名称与密码
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
 uci set wireless.@wifi-iface[0].encryption='sae-mixed'
 uci set wireless.@wifi-iface[0].key='12345678'
@@ -27,6 +28,34 @@ uci set wireless.@wifi-iface[0].key='12345678'
 uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
 uci set wireless.@wifi-iface[1].encryption='sae-mixed'
 uci set wireless.@wifi-iface[1].key='12345678'
+
+# 设置国家码为香港，提高信号覆盖但保持兼容性
+uci set wireless.radio0.country='HK'
+uci set wireless.radio1.country='HK'
+
+# 强制 HT40/HE80 模式，提升速率与穿墙
+uci set wireless.radio0.htmode='HT40'       # 2.4G
+uci set wireless.radio1.htmode='HE80'       # 5G
+
+# 设置功率（单位 dBm，MT76 通常最大22~27）
+uci set wireless.radio0.txpower='22'
+uci set wireless.radio1.txpower='27'
+
+# 提升稳定性：距离、noscan、关闭beacon限制
+uci set wireless.@wifi-iface[0].distance='100'
+uci set wireless.@wifi-iface[0].noscan='1'
+uci set wireless.@wifi-iface[1].distance='100'
+uci set wireless.@wifi-iface[1].noscan='1'
+
+# 关闭功率自适应
+uci set wireless.radio0.adaptive='0'
+uci set wireless.radio1.adaptive='0'
+
+# 设置 beacon 周期
+uci set wireless.radio0.beacon_int='100'
+uci set wireless.radio1.beacon_int='100'
+
+# 全部配置完，一次性提交并重载！
 uci commit wireless
 wifi reload
 
