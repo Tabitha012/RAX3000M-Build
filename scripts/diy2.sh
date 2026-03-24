@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：开盖即食 + 稳定不炸 + DNS 绝对接管 + 国内外完美分流 + 私人主题
+# 核心目标：开盖即食 + 硬件加速 + DNS绝对接管 + 国内外完美分流 + 私人主题
 # ==========================================
 
 # ==========================================
@@ -14,11 +14,11 @@ sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generat
 # 2. 提前建好 smartdns 的系统目录，准备塞入白名单
 mkdir -p package/base-files/files/etc/smartdns
 
-# 3. 利用 GitHub 万兆网络，秒下国内直连域名列表
+# 3. 利用 GitHub 万兆网络，秒下国内直连域名列表 (带重试防抽风复活甲)
 echo ">>> 开始下载国内直连域名列表..."
-curl -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
-curl -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/apple-cn.txt" >> /tmp/cn_domains.txt
-curl -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/google-cn.txt" >> /tmp/cn_domains.txt
+curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
+curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/apple-cn.txt" >> /tmp/cn_domains.txt
+curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/google-cn.txt" >> /tmp/cn_domains.txt
 
 # 4. 转换格式并强行打包进固件的 /etc/smartdns/cn.conf 中
 cat /tmp/cn_domains.txt | grep -v "^#" | grep -v "^regexp:" | sed 's/^full://g' | sed 's/^/nameserver \//g' | sed 's/$/\/cn/g' > package/base-files/files/etc/smartdns/cn.conf
@@ -66,7 +66,14 @@ uci commit wireless
 wifi reload
 
 # ------------------------------------------
-# 二、DNS 绝对接管与防泄露 (掐断光猫，绑架 dnsmasq)
+# 二、强制开启全能网络加速 (软件+硬件 Flow Offloading)
+# ------------------------------------------
+uci set firewall.@defaults[0].flow_offloading='1'
+uci set firewall.@defaults[0].flow_offloading_hw='1'
+uci commit firewall
+
+# ------------------------------------------
+# 三、DNS 绝对接管与防泄露 (掐断光猫，绑架 dnsmasq)
 # ------------------------------------------
 uci set network.wan.peerdns='0'
 uci set network.wan6.peerdns='0'
@@ -80,7 +87,7 @@ uci commit dhcp
 /etc/init.d/dnsmasq restart
 
 # ------------------------------------------
-# 三、SmartDNS 终极加速与完美国内外分流
+# 四、SmartDNS 终极加速与完美国内外分流
 # ------------------------------------------
 # 1. 核心加速参数配置
 uci set smartdns.@smartdns[0].enabled='1'
@@ -128,7 +135,7 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 四、附加：霸王硬上弓，强制安装私藏版 Argon 主题
+# 五、附加：霸王硬上弓，强制安装私藏版 Argon 主题
 # ------------------------------------------
 if [ -f "/root/luci-theme-argon_2.3.1_all.ipk" ]; then
     echo "发现 Argon 主题包，正在强制安装..." > /dev/console
@@ -141,7 +148,7 @@ if [ -f "/root/luci-theme-argon_2.3.1_all.ipk" ]; then
 fi
 
 # ------------------------------------------
-# 五、销毁证据，事了拂衣去
+# 六、销毁证据，事了拂衣去
 # ------------------------------------------
 rm -f /etc/uci-defaults/99-custom-settings
 exit 0
