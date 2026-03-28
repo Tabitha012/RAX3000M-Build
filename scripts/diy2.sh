@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：开盖即食 + 硬件加速 + DNS绝对接管 + 国内外完美分流 + 私人主题
+# 核心目标：云端原生防删 + 硬件加速 + DNS绝对接管 + 私人主题
 # ==========================================
 
 # ==========================================
@@ -11,16 +11,19 @@
 # 1. 编译期直接修改默认 LAN IP
 sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
-# 2. 提前建好 smartdns 的系统目录，准备塞入白名单
+# 2. 【核心神技】：底层基因改造，强行将救命依赖写入系统必装清单，防编译器自动删除！
+sed -i 's/DEFAULT_PACKAGES +=/DEFAULT_PACKAGES += luci-compat /' include/target.mk
+
+# 3. 提前建好 smartdns 的系统目录，准备塞入白名单
 mkdir -p package/base-files/files/etc/smartdns
 
-# 3. 利用 GitHub 万兆网络，秒下国内直连域名列表 (带重试防抽风复活甲)
+# 4. 利用 GitHub 万兆网络，秒下国内直连域名列表 (带重试防抽风)
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/apple-cn.txt" >> /tmp/cn_domains.txt
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/google-cn.txt" >> /tmp/cn_domains.txt
 
-# 4. 转换格式并强行打包进固件的 /etc/smartdns/cn.conf 中
+# 5. 转换格式并强行打包进固件的 /etc/smartdns/cn.conf 中
 cat /tmp/cn_domains.txt | grep -v "^#" | grep -v "^regexp:" | sed 's/^full://g' | sed 's/^/nameserver \//g' | sed 's/$/\/cn/g' > package/base-files/files/etc/smartdns/cn.conf
 
 # ==========================================
@@ -30,7 +33,6 @@ mkdir -p package/base-files/files/etc/uci-defaults
 cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 #!/bin/sh
 
-# 等待 5 秒，确保系统默认的 network 和 wireless 配置文件已经生成完毕
 sleep 5
 
 # ------------------------------------------
@@ -44,13 +46,11 @@ uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
 uci set wireless.@wifi-iface[1].encryption='sae-mixed'
 uci set wireless.@wifi-iface[1].key='12345678'
 
-# 设置国家码为香港，强制 HT40/HE80 模式
 uci set wireless.radio0.country='HK'
 uci set wireless.radio1.country='HK'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio1.htmode='HE80'
 
-# 设置鸡血功率与稳定性参数
 uci set wireless.radio0.txpower='22'
 uci set wireless.radio1.txpower='27'
 uci set wireless.@wifi-iface[0].distance='100'
@@ -61,19 +61,18 @@ uci set wireless.radio0.adaptive='0'
 uci set wireless.radio1.adaptive='0'
 uci set wireless.radio0.beacon_int='100'
 uci set wireless.radio1.beacon_int='100'
-
 uci commit wireless
 wifi reload
 
 # ------------------------------------------
-# 二、强制开启全能网络加速 (软件+硬件 Flow Offloading)
+# 二、强制开启全能网络加速 (软件+硬件)
 # ------------------------------------------
 uci set firewall.@defaults[0].flow_offloading='1'
 uci set firewall.@defaults[0].flow_offloading_hw='1'
 uci commit firewall
 
 # ------------------------------------------
-# 三、DNS 绝对接管与防泄露 (掐断光猫，绑架 dnsmasq)
+# 三、DNS 绝对接管与防泄露
 # ------------------------------------------
 uci set network.wan.peerdns='0'
 uci set network.wan6.peerdns='0'
@@ -89,7 +88,6 @@ uci commit dhcp
 # ------------------------------------------
 # 四、SmartDNS 终极加速与完美国内外分流
 # ------------------------------------------
-# 1. 核心加速参数配置
 uci set smartdns.@smartdns[0].enabled='1'
 uci set smartdns.@smartdns[0].port='6053'
 uci set smartdns.@smartdns[0].tcp_server='1'
@@ -101,15 +99,12 @@ uci set smartdns.@smartdns[0].speed_check_mode='ping,tcp:80,tcp:443'
 uci set smartdns.@smartdns[0].response_mode='fastest-ip'
 uci set smartdns.@smartdns[0].force_aaaa_soa='1'
 
-# 2. 清理系统自带杂乱节点
 while uci -q delete smartdns.@server[0]; do :; done
 
-# 3. 强行关联我们在云端打包好的 cn.conf 白名单！
 if ! grep -q "conf-file /etc/smartdns/cn.conf" /etc/smartdns/custom.conf; then
     echo "conf-file /etc/smartdns/cn.conf" >> /etc/smartdns/custom.conf
 fi
 
-# 4. 国内 DNS (分配到 cn 组，由于有白名单配合，绝对不翻车！)
 uci add smartdns server
 uci set smartdns.@server[-1].name='AliDNS'
 uci set smartdns.@server[-1].ip='223.5.5.5'
@@ -122,7 +117,6 @@ uci set smartdns.@server[-1].ip='119.29.29.29'
 uci set smartdns.@server[-1].server_group='cn'
 uci set smartdns.@server[-1].exclude_default_group='1'
 
-# 5. 海外 DNS (作为默认组，负责接管白名单以外的所有流量)
 uci add smartdns server
 uci set smartdns.@server[-1].name='Cloudflare'
 uci set smartdns.@server[-1].ip='1.1.1.1'
@@ -135,14 +129,12 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 五、附加：霸王硬上弓，强制安装私藏版 Argon 主题
+# 五、霸王硬上弓，强制安装你放进 files/root 的所有自定义包 (主题+OpenClash等)
 # ------------------------------------------
-if [ -f "/root/luci-theme-argon_2.3.1_all.ipk" ]; then
-    echo "发现 Argon 主题包，正在强制安装..." > /dev/console
-    opkg install /root/luci-theme-argon_2.3.1_all.ipk --force-depends
-    # 装完删包，腾出空间
-    rm -f /root/luci-theme-argon_2.3.1_all.ipk
-    # 强制设为默认主题
+if ls /root/*.ipk 1> /dev/null 2>&1; then
+    echo "发现私有安装包，正在强制安装..." > /dev/console
+    opkg install /root/*.ipk --force-depends
+    rm -f /root/*.ipk
     uci set luci.main.mediaurlbase='/luci-static/argon'
     uci commit luci
 fi
