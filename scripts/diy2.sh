@@ -1,25 +1,30 @@
 #!/bin/bash
 # ==========================================
-# RAX3000M 终极源码修仙大圆满版 (diy2.sh)
-# 核心：手搓 po2lmo 破编译报错 + 焊死 luci-compat 破运行报错！
+# 🚀 目标设备：RAX3000M
+# 🕒 修改时间：2026-03-29 23:55:00
+# 🔢 修改批次：第 1 次正式发版 (v1.0 - 大圆满结丹版)
+# 📝 核心更新日志：
+#    1. 手搓 po2lmo，强行攻克云端 OpenClash 源码编译 Error 127。
+#    2. 底层焊死 luci-compat，物理超度网页端 datatypes 崩溃报错。
+#    3. 稳妥保留：WPA2 秒连 + BBR 加速 + KVR 漫游 + SmartDNS 终极分流。
 # ==========================================
 
 # ==========================================
 # 零、云端编译期处理 (逆天改命)
 # ==========================================
-# 1. 修改 LAN IP，防光猫冲突
+# 修改 LAN IP
 sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
-# 2. 【破编译报错】：强行手搓 po2lmo 并注入云端环境变量！
+# 【破编译报错】：强行手搓 po2lmo 并注入云端环境变量！
 echo ">>> 开始强行编译并注入 po2lmo 工具..."
 pushd feeds/luci/applications/luci-app-openclash/tools/po2lmo
 make && sudo install -m755 po2lmo /usr/local/bin/po2lmo
 popd
 
-# 3. 【破运行报错】：强行把 luci-compat 绑死在网页底层依赖！
+# 【破运行报错】：强行把 luci-compat 绑死在网页底层依赖！
 sed -i 's/DEPENDS:=.*/& +luci-compat/g' feeds/luci/modules/luci-base/Makefile
 
-# 4. 提前建好 smartdns 的系统目录，准备塞入白名单
+# 准备 SmartDNS 白名单
 mkdir -p package/base-files/files/etc/smartdns
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
@@ -152,7 +157,7 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 五、静默安装你在 files/root 放的插件 (Argon主题等)
+# 五、静默安装 files/root 放的插件 (Argon主题等)
 # ------------------------------------------
 if ls /root/*.ipk 1> /dev/null 2>&1; then
     opkg install /root/*.ipk --force-depends
