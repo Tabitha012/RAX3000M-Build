@@ -1,19 +1,25 @@
 #!/bin/bash
 # ==========================================
-# RAX3000M 终极满血求稳版脚本 (diy2.sh)
-# 核心：WPA2+硬件加速+BBR+KVR+SmartDNS+私人主题，且绝对不崩底层！
+# RAX3000M 终极源码修仙大圆满版 (diy2.sh)
+# 核心：手搓 po2lmo 破编译报错 + 焊死 luci-compat 破运行报错！
 # ==========================================
 
 # ==========================================
-# 零、云端编译期处理 (最稳妥的依赖注入)
+# 零、云端编译期处理 (逆天改命)
 # ==========================================
-# 1. 修改 LAN IP
+# 1. 修改 LAN IP，防光猫冲突
 sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
-# 2. 强行把 luci-compat 绑定到网页底层依赖，防云端瞎删！(这招最稳，不影响开机)
+# 2. 【破编译报错】：强行手搓 po2lmo 并注入云端环境变量！
+echo ">>> 开始强行编译并注入 po2lmo 工具..."
+pushd feeds/luci/applications/luci-app-openclash/tools/po2lmo
+make && sudo install -m755 po2lmo /usr/local/bin/po2lmo
+popd
+
+# 3. 【破运行报错】：强行把 luci-compat 绑死在网页底层依赖！
 sed -i 's/DEPENDS:=.*/& +luci-compat/g' feeds/luci/modules/luci-base/Makefile
 
-# 3. 准备 SmartDNS 白名单
+# 4. 提前建好 smartdns 的系统目录，准备塞入白名单
 mkdir -p package/base-files/files/etc/smartdns
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
@@ -22,7 +28,7 @@ curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@rel
 cat /tmp/cn_domains.txt | grep -v "^#" | grep -v "^regexp:" | sed 's/^full://g' | sed 's/^/nameserver \//g' | sed 's/$/\/cn/g' > package/base-files/files/etc/smartdns/cn.conf
 
 # ==========================================
-# 壹、构建开机自启脚本 (只配置，不死等，不卡系统)
+# 壹、构建开机自启脚本
 # ==========================================
 mkdir -p package/base-files/files/etc/uci-defaults
 cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
@@ -31,14 +37,14 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ------------------------------------------
-# 一、WiFi 求稳 + 极速握手效率拉满 (KVR保留)
+# 一、WiFi 绝对求稳 (WPA2) + KVR 极速漫游
 # ------------------------------------------
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
-uci set wireless.@wifi-iface[0].encryption='psk2' # 稳如老狗的 WPA2
+uci set wireless.@wifi-iface[0].encryption='psk2'
 uci set wireless.@wifi-iface[0].key='12345678'
 
 uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
-uci set wireless.@wifi-iface[1].encryption='psk2' # 稳如老狗的 WPA2
+uci set wireless.@wifi-iface[1].encryption='psk2'
 uci set wireless.@wifi-iface[1].key='12345678'
 
 uci set wireless.radio0.country='HK'
@@ -48,13 +54,11 @@ uci set wireless.radio1.htmode='HE80'
 uci set wireless.radio0.txpower='22'
 uci set wireless.radio1.txpower='22'
 
-# MU-MIMO 与 波束成形
 uci set wireless.radio0.mu_mimo='1'
 uci set wireless.radio1.mu_mimo='1'
 uci set wireless.radio0.beamforming='1'
 uci set wireless.radio1.beamforming='1'
 
-# 快速漫游 (KVR)
 for i in 0 1; do
     uci set wireless.@wifi-iface[$i].ieee80211k='1'
     uci set wireless.@wifi-iface[$i].ieee80211v='1'
@@ -75,7 +79,7 @@ uci commit wireless
 wifi reload
 
 # ------------------------------------------
-# 二、网络底层性能榨干：硬件加速 + BBR
+# 二、网络底层性能：硬件加速 + BBR
 # ------------------------------------------
 uci set firewall.@defaults[0].flow_offloading='1'
 uci set firewall.@defaults[0].flow_offloading_hw='1'
@@ -86,7 +90,7 @@ echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 sysctl -p
 
 # ------------------------------------------
-# 三、DNS 温和接管 (不搞暴力删除，防止 DHCP 崩溃)
+# 三、温和接管 DNS
 # ------------------------------------------
 uci set network.wan.peerdns='0'
 uci set network.wan6.peerdns='0'
@@ -94,13 +98,13 @@ uci commit network
 
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci set dhcp.@dnsmasq[0].localuse='0'
-uci clear dhcp.@dnsmasq[0].server # 温和清空，而不是暴力删除整个节点
+uci clear dhcp.@dnsmasq[0].server
 uci add_list dhcp.@dnsmasq[0].server='127.0.0.1#6053'
 uci commit dhcp
 /etc/init.d/dnsmasq restart
 
 # ------------------------------------------
-# 四、SmartDNS 终极防断流与国内外完美分流
+# 四、SmartDNS 终极稳定版
 # ------------------------------------------
 uci set smartdns.@smartdns[0].enabled='1'
 uci set smartdns.@smartdns[0].port='6053'
@@ -148,7 +152,7 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 五、安装你在 files/root 放的插件 (Argon/OpenClash)
+# 五、静默安装你在 files/root 放的插件 (Argon主题等)
 # ------------------------------------------
 if ls /root/*.ipk 1> /dev/null 2>&1; then
     opkg install /root/*.ipk --force-depends
@@ -158,7 +162,7 @@ if ls /root/*.ipk 1> /dev/null 2>&1; then
 fi
 
 # ------------------------------------------
-# 六、销毁证据，事了拂衣去
+# 六、事了拂衣去
 # ------------------------------------------
 rm -f /etc/uci-defaults/99-custom-settings
 exit 0
