@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：WPA3满血 + 硬件加速 + DNS绝对接管 + 私人主题 + 甜点功率
+# 核心目标：WPA3满血 + 硬件加速 + BBR + KVR极速握手 + DNS绝对接管 + 私人主题 
 # ==========================================
 
 # ==========================================
@@ -40,14 +40,14 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ------------------------------------------
-# 一、WiFi 开盖即食 & 满血 WPA3 + 甜点功率
+# 一、WiFi 开盖即食 & 满血 WPA3 + 极速握手效率拉满
 # ------------------------------------------
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
-uci set wireless.@wifi-iface[0].encryption='sae-mixed' # 满血复活 WPA3 混合模式！
+uci set wireless.@wifi-iface[0].encryption='sae-mixed' 
 uci set wireless.@wifi-iface[0].key='12345678'
 
 uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
-uci set wireless.@wifi-iface[1].encryption='sae-mixed' # 满血复活 WPA3 混合模式！
+uci set wireless.@wifi-iface[1].encryption='sae-mixed' 
 uci set wireless.@wifi-iface[1].key='12345678'
 
 uci set wireless.radio0.country='HK'
@@ -55,9 +55,23 @@ uci set wireless.radio1.country='HK'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio1.htmode='HE80'
 
-# 定格在 22dBm，兼顾机箱顶散热与穿墙，打游戏爽飞且不发烧！
 uci set wireless.radio0.txpower='22'
 uci set wireless.radio1.txpower='22'
+
+# 开启 MU-MIMO 与 波束成形 (大幅提升多设备并发与信号指向性)
+uci set wireless.radio0.mu_mimo='1'
+uci set wireless.radio1.mu_mimo='1'
+uci set wireless.radio0.beamforming='1'
+uci set wireless.radio1.beamforming='1'
+
+# 开启 802.11k/v/r 快速漫游 (缩短唤醒握手时间，实现毫秒级闪连)
+for i in 0 1; do
+    uci set wireless.@wifi-iface[$i].ieee80211k='1'
+    uci set wireless.@wifi-iface[$i].ieee80211v='1'
+    uci set wireless.@wifi-iface[$i].ieee80211r='1'
+    uci set wireless.@wifi-iface[$i].ft_psk_generate_local='1'
+    uci set wireless.@wifi-iface[$i].ft_over_ds='0'
+done
 
 uci set wireless.@wifi-iface[0].distance='100'
 uci set wireless.@wifi-iface[0].noscan='1'
@@ -71,11 +85,15 @@ uci commit wireless
 wifi reload
 
 # ------------------------------------------
-# 二、强制开启全能网络加速 (软件+硬件)
+# 二、网络底层性能榨干：硬件加速 + BBR 拥塞控制
 # ------------------------------------------
 uci set firewall.@defaults[0].flow_offloading='1'
 uci set firewall.@defaults[0].flow_offloading_hw='1'
 uci commit firewall
+
+echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+sysctl -p
 
 # ------------------------------------------
 # 三、DNS 绝对接管与防泄露
