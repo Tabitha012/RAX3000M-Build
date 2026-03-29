@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：云端原生防删 + 硬件加速 + DNS绝对接管 + 私人主题
+# 核心目标：WPA3满血 + 硬件加速 + DNS绝对接管 + 私人主题 + 甜点功率
 # ==========================================
 
 # ==========================================
@@ -11,19 +11,23 @@
 # 1. 编译期直接修改默认 LAN IP
 sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
-# 2. 【核心神技】：底层基因改造，强行将救命依赖写入系统必装清单，防编译器自动删除！
+# 2. 强保命：将 luci-compat 写入系统必装清单，防自动删除！
 sed -i 's/DEFAULT_PACKAGES +=/DEFAULT_PACKAGES += luci-compat /' include/target.mk
 
-# 3. 提前建好 smartdns 的系统目录，准备塞入白名单
+# 3. 狸猫换太子：刺杀系统自带的阉割版 wpad，强行替换为支持 WPA3 的满血版 wpad-openssl！
+sed -i 's/wpad-basic-mbedtls/wpad-openssl/g' include/target.mk
+sed -i 's/wpad-basic-wolfssl/wpad-openssl/g' include/target.mk
+
+# 4. 提前建好 smartdns 的系统目录，准备塞入白名单
 mkdir -p package/base-files/files/etc/smartdns
 
-# 4. 利用 GitHub 万兆网络，秒下国内直连域名列表 (带重试防抽风)
+# 5. 秒下国内直连域名列表 (带重试防抽风)
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/apple-cn.txt" >> /tmp/cn_domains.txt
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/google-cn.txt" >> /tmp/cn_domains.txt
 
-# 5. 转换格式并强行打包进固件的 /etc/smartdns/cn.conf 中
+# 6. 转换格式并强行打包进固件的 /etc/smartdns/cn.conf 中
 cat /tmp/cn_domains.txt | grep -v "^#" | grep -v "^regexp:" | sed 's/^full://g' | sed 's/^/nameserver \//g' | sed 's/$/\/cn/g' > package/base-files/files/etc/smartdns/cn.conf
 
 # ==========================================
@@ -36,14 +40,14 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ------------------------------------------
-# 一、WiFi 开盖即食 & 鸡血配置
+# 一、WiFi 开盖即食 & 满血 WPA3 + 甜点功率
 # ------------------------------------------
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
-uci set wireless.@wifi-iface[0].encryption='sae-mixed'
+uci set wireless.@wifi-iface[0].encryption='sae-mixed' # 满血复活 WPA3 混合模式！
 uci set wireless.@wifi-iface[0].key='12345678'
 
 uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
-uci set wireless.@wifi-iface[1].encryption='sae-mixed'
+uci set wireless.@wifi-iface[1].encryption='sae-mixed' # 满血复活 WPA3 混合模式！
 uci set wireless.@wifi-iface[1].key='12345678'
 
 uci set wireless.radio0.country='HK'
@@ -51,8 +55,10 @@ uci set wireless.radio1.country='HK'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio1.htmode='HE80'
 
+# 定格在 22dBm，兼顾机箱顶散热与穿墙，打游戏爽飞且不发烧！
 uci set wireless.radio0.txpower='22'
-uci set wireless.radio1.txpower='27'
+uci set wireless.radio1.txpower='22'
+
 uci set wireless.@wifi-iface[0].distance='100'
 uci set wireless.@wifi-iface[0].noscan='1'
 uci set wireless.@wifi-iface[1].distance='100'
@@ -129,7 +135,7 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 五、霸王硬上弓，强制安装你放进 files/root 的所有自定义包 (主题+OpenClash等)
+# 五、霸王硬上弓，强制安装自定义包
 # ------------------------------------------
 if ls /root/*.ipk 1> /dev/null 2>&1; then
     echo "发现私有安装包，正在强制安装..." > /dev/console
