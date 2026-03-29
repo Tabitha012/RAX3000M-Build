@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # RAX3000M 终极定制脚本 (diy2.sh)
-# 核心目标：WPA3满血 + 硬件加速 + BBR + KVR极速握手 + DNS绝对接管 + 私人主题 
+# 核心目标：纯血WPA3 + 硬件加速 + BBR + KVR极速握手 + DNS绝对接管 + 私人主题 
 # ==========================================
 
 # ==========================================
@@ -14,7 +14,7 @@ sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generat
 # 2. 强保命：将 luci-compat 写入系统必装清单，防自动删除！
 sed -i 's/DEFAULT_PACKAGES +=/DEFAULT_PACKAGES += luci-compat /' include/target.mk
 
-# 3. 狸猫换太子：刺杀系统自带的阉割版 wpad，强行替换为支持 WPA3 的满血版 wpad-openssl！
+# 3. 狸猫换太子：刺杀系统自带的阉割版 wpad，强行替换为支持纯血 WPA3 的满血版 wpad-openssl！
 sed -i 's/wpad-basic-mbedtls/wpad-openssl/g' include/target.mk
 sed -i 's/wpad-basic-wolfssl/wpad-openssl/g' include/target.mk
 
@@ -40,14 +40,14 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ------------------------------------------
-# 一、WiFi 开盖即食 & 满血 WPA3 + 极速握手效率拉满
+# 一、WiFi 开盖即食 & 纯血 WPA3 + 极速握手效率拉满
 # ------------------------------------------
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
-uci set wireless.@wifi-iface[0].encryption='sae-mixed' 
+uci set wireless.@wifi-iface[0].encryption='sae' # 纯血 WPA3，淘汰老弱病残！
 uci set wireless.@wifi-iface[0].key='12345678'
 
 uci set wireless.@wifi-iface[1].ssid='immortalwrt5.0'
-uci set wireless.@wifi-iface[1].encryption='sae-mixed' 
+uci set wireless.@wifi-iface[1].encryption='sae' # 纯血 WPA3，淘汰老弱病残！
 uci set wireless.@wifi-iface[1].key='12345678'
 
 uci set wireless.radio0.country='HK'
@@ -55,6 +55,7 @@ uci set wireless.radio1.country='HK'
 uci set wireless.radio0.htmode='HT40'
 uci set wireless.radio1.htmode='HE80'
 
+# 甜点功率，机箱顶上不发烧
 uci set wireless.radio0.txpower='22'
 uci set wireless.radio1.txpower='22'
 
