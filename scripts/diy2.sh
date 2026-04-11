@@ -1,11 +1,12 @@
 #!/bin/bash
 # ==========================================
 # 🚀 目标设备：RAX3000M
-# 🕒 修改批次：第 6 次修改 (v1.5 - DNS 养蛊防爆版)
+# 🕒 修改批次：第 7 次修改 (v1.6 - 强抢养蛊全家桶版)
 # 📝 核心更新日志：
-#    1. [新增去广告] 预埋 AdGuardHome 防爆机制，默认关闭防 53 端口冲突！
-#    2. [颜控专属] 强制拉取 luci-theme-design 源码，设为开机默认主题。
-#    3. [底盘稳固] WPA2 秒连 + 关硬件加速保 Netch + 官方源码破 Error 127。
+#    1. [强抢去广告] 官方没有？直接去 rufengsuixing 老巢拉取 AdGuardHome 源码！
+#    2. [防爆封印] AdGuardHome 默认关停，防 53 端口冲突断网！
+#    3. [颜控专属] 强制拉取 luci-theme-design 源码，设为开机默认主题。
+#    4. [底盘稳固] WPA2 秒连 + 关硬件加速保 Netch + 官方源码破 Error 127。
 # ==========================================
 
 # ==========================================
@@ -28,7 +29,11 @@ popd
 echo ">>> 开始拉取 luci-theme-design 源码..."
 git clone --depth=1 https://github.com/gngpp/luci-theme-design.git package/luci-theme-design
 
-# 5. 准备 SmartDNS 白名单
+# 5. 【高亮新增】：强行拉取 AdGuardHome 源码（官方不给，咱们自己抢！）
+echo ">>> 开始拉取 luci-app-adguardhome 源码..."
+git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
+
+# 6. 准备 SmartDNS 白名单
 mkdir -p package/base-files/files/etc/smartdns
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
