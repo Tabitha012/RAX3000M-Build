@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==========================================
 # 🚀 目标设备：RAX3000M
-# 🕒 修改批次：第 7 次修改 (v1.6 - 强抢养蛊全家桶版)
+# 🕒 修改批次：第 10 次修改 (v1.9 - 强迫症圆满极光版)
 # 📝 核心更新日志：
-#    1. [强抢去广告] 官方没有？直接去 rufengsuixing 老巢拉取 AdGuardHome 源码！
-#    2. [防爆封印] AdGuardHome 默认关停，防 53 端口冲突断网！
-#    3. [颜控专属] 强制拉取 luci-theme-design 源码，设为开机默认主题。
-#    4. [底盘稳固] WPA2 秒连 + 关硬件加速保 Netch + 官方源码破 Error 127。
+#    1. [细节拉满] 强制初始化 Aurora 配置，开机默认“跟随系统”深浅色模式！
+#    2. [神兽齐聚] OpenClash + SSR-Plus + Taskplan + AdGuardHome。
+#    3. [双雄防爆] 代理插件与去广告默认关停，防落地火拼断网！
+#    4. [颜值与底盘] Aurora 极光主题 + 关硬件加速保测速 + WPA2 防密码错误。
 # ==========================================
 
 # ==========================================
@@ -19,21 +19,30 @@ sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generat
 rm -rf feeds/luci/applications/luci-app-openclash
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash.git package/luci-app-openclash
 
-# 3. 现场编译 po2lmo，并塞进系统的全局环境 (破编译报错)
+# 3. 现场编译 po2lmo，防 OpenClash 编译 Error 127
 echo ">>> 开始强行锻造 po2lmo 工具..."
 pushd package/luci-app-openclash/tools/po2lmo
 make && sudo install -m755 po2lmo /usr/bin/po2lmo
 popd
 
-# 4. 强行拉取 Design 主题源码！
-echo ">>> 开始拉取 luci-theme-design 源码..."
-git clone --depth=1 https://github.com/gngpp/luci-theme-design.git package/luci-theme-design
+# 4. 拉取全新的 Aurora 主题及配置工具
+echo ">>> 开始拉取 luci-theme-aurora..."
+git clone --depth=1 https://github.com/eamonxg/luci-theme-aurora.git package/luci-theme-aurora
+git clone --depth=1 https://github.com/eamonxg/luci-app-aurora-config.git package/luci-app-aurora-config
 
-# 5. 【高亮新增】：强行拉取 AdGuardHome 源码（官方不给，咱们自己抢！）
-echo ">>> 开始拉取 luci-app-adguardhome 源码..."
+# 5. 强行拉取 AdGuardHome 源码
+echo ">>> 开始拉取 luci-app-adguardhome..."
 git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome.git package/luci-app-adguardhome
 
-# 6. 准备 SmartDNS 白名单
+# 6. 强行拉取 Taskplan 计划任务高级面板
+echo ">>> 开始拉取 luci-app-taskplan..."
+git clone --depth=1 https://github.com/sirpdboy/luci-app-taskplan.git package/luci-app-taskplan
+
+# 7. 拉取 fw876 的 helloworld 仓库 (包含 SSR-Plus)
+echo ">>> 开始拉取 helloworld (SSR-Plus)..."
+git clone --depth=1 https://github.com/fw876/helloworld.git package/helloworld
+
+# 8. 准备 SmartDNS 白名单
 mkdir -p package/base-files/files/etc/smartdns
 echo ">>> 开始下载国内直连域名列表..."
 curl --retry 3 -sL "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/direct-list.txt" > /tmp/cn_domains.txt
@@ -50,7 +59,7 @@ cat << "EOF" > package/base-files/files/etc/uci-defaults/99-custom-settings
 sleep 5
 
 # ------------------------------------------
-# 一、WiFi 绝对求稳 (WPA2) + KV 漫游 (剔除了有毒的 R)
+# 一、WiFi 绝对求稳 (WPA2) + KV 漫游 (无 R)
 # ------------------------------------------
 uci set wireless.@wifi-iface[0].ssid='immortalwrt2.4'
 uci set wireless.@wifi-iface[0].encryption='psk2'
@@ -90,7 +99,7 @@ uci commit wireless
 wifi reload
 
 # ------------------------------------------
-# 二、网络底层性能：只开软件加速，拯救 Netch 测速！
+# 二、网络底层：软件加速保代理测速
 # ------------------------------------------
 uci set firewall.@defaults[0].flow_offloading='1'
 uci set firewall.@defaults[0].flow_offloading_hw='0'
@@ -114,7 +123,7 @@ uci commit dhcp
 /etc/init.d/dnsmasq restart
 
 # ------------------------------------------
-# 四、SmartDNS 终极稳定版
+# 四、SmartDNS 稳定版
 # ------------------------------------------
 uci set smartdns.@smartdns[0].enabled='1'
 uci set smartdns.@smartdns[0].port='6053'
@@ -158,16 +167,33 @@ uci commit smartdns
 /etc/init.d/smartdns restart
 
 # ------------------------------------------
-# 五、强制设置主题为 Design，并给 AdGuardHome 上封印！
+# 五、颜值拉满：强制极光主题，并设置跟随系统！
 # ------------------------------------------
-# 设置全局默认主题为 design
-uci set luci.main.mediaurlbase='/luci-static/design'
+# 1. 设置全局默认主题为 aurora
+uci set luci.main.mediaurlbase='/luci-static/aurora'
 uci commit luci
 
-# 给 AdGuardHome 上防爆封印（默认关闭），防开机断网
+# 2. 提前预埋 Aurora 配置，强行设为跟随系统 (Auto)
+if [ ! -f /etc/config/aurora ]; then
+    touch /etc/config/aurora
+    uci add aurora global
+fi
+uci set aurora.@global[0].mode='auto'
+uci commit aurora
+
+# ------------------------------------------
+# 六、给神兽们上防爆封印！
+# ------------------------------------------
+# 1. 封印 AdGuardHome
 if [ -f /etc/config/adguardhome ]; then
     uci set adguardhome.config.enabled='0'
     uci commit adguardhome
+fi
+
+# 2. 封印 SSR-Plus (防跟 OpenClash 火拼)
+if [ -f /etc/config/shadowsocksr ]; then
+    uci set shadowsocksr.@global[0].pdnsd_enable='0'
+    uci commit shadowsocksr
 fi
 
 if ls /root/*.ipk 1> /dev/null 2>&1; then
@@ -176,7 +202,7 @@ if ls /root/*.ipk 1> /dev/null 2>&1; then
 fi
 
 # ------------------------------------------
-# 六、事了拂衣去
+# 七、事了拂衣去
 # ------------------------------------------
 rm -f /etc/uci-defaults/99-custom-settings
 exit 0
