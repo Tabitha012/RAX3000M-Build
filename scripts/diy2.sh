@@ -13,7 +13,7 @@
 # 零、源码拉取与编译期处理
 # ==========================================
 # 1. 修改默认 LAN IP 为 192.168.6.1
-sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.1.1/192.168.1.1/g' package/base-files/files/bin/config_generate
 
 # 2. 【高亮新增】：铲除官方 Argon，为你仓库里的私藏版让路！
 rm -rf feeds/luci/themes/luci-theme-argon
