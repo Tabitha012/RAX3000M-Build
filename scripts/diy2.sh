@@ -1,13 +1,13 @@
 #!/bin/bash
 # ==========================================
 # 🚀 目标设备：RAX3000M (ImmortalWrt) - 主题编译集成版
-# 📝 保留：WiFi 澳洲鸡血、BBR 加速、LAN IP 锁定
+# 📝 保留：WiFi 澳洲鸡血、BBR 加速、LAN IP 锁定为 192.168.1.33
 # ❌ 移除：SmartDNS 全套配置、国内分流列表、Dnsmasq 转发规则
 # 📦 主题：编译时解压 ipk 至 files/，完成后自动删除 ipk
 # ==========================================
 
-# 1. 默认 LAN IP 强行锁死为 192.168.1.1
-sed -i 's/192.168\.[0-9]\{1,3\}\.[0-9]\{1,3\}/192.168.1.1/g' package/base-files/files/bin/config_generate
+# 1. 默认 LAN IP 强行锁死为 192.168.1.33 (彻底防撞网段)
+sed -i 's/192.168\.[0-9]\{1,3\}\.[0-9]\{1,3\}/192.168.1.33/g' package/base-files/files/bin/config_generate
 
 # 2. 移除官方 argon 主题（避免与你的自定义主题冲突）
 rm -rf feeds/luci/themes/luci-theme-argon
