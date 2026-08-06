@@ -1,3 +1,0 @@
-config dnsmasq
-    option noresolv '1'
-    list server '127.0.0.1#6053'
