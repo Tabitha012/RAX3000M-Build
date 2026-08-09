@@ -6,8 +6,7 @@ on:
 
 env:
   REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
-  REPO_BRANCH: openwrt-24.10-6.6   # <--- 重点！就只改这几个字母
-  NEW_LAN_IP: 192.168.6.1
+  REPO_BRANCH: openwrt-24.10
   TZ: Asia/Shanghai
 
 jobs:
@@ -19,54 +18,103 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
 
-      - name: 初始化编译环境
+      - name: 初始化官方编译环境
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android 2>/dev/null
           sudo -E apt-get -y update
           sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* || true
-          sudo -E apt-get -y install $(curl -fsSL https://is.gd/depend_ubuntu2204_openwrt)
+          sudo -E apt-get -y install $(curl -fsSL https://raw.githubusercontent.com/P3TERX/Actions-OpenWrt/main/depends-ubuntu-2204)
           sudo -E apt-get -y autoremove --purge
           sudo -E apt-get clean
           sudo timedatectl set-timezone "${TZ}"
 
-      - name: 拉取源码
+      - name: 进度 10% - 环境初始化完成
+        if: always()
+        run: |
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译进度" \
+            --data-urlencode "body=进度: 10%\n阶段: 编译环境初始化完成\n即将开始拉取源码" \
+            --data-urlencode "sound=glass" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 拉取官方源码
         run: |
           git clone -q --single-branch --depth=1 --branch=${REPO_BRANCH} ${REPO_URL} openwrt
 
-      - name: 更新并安装 Feeds
+      - name: 进度 25% - 源码拉取完成
+        if: always()
+        run: |
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译进度" \
+            --data-urlencode "body=进度: 25%\n阶段: 源码拉取完成\n即将执行 diy2 脚本" \
+            --data-urlencode "sound=glass" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 运行 diy2 自定义脚本（添加第三方源 + 更新 feeds + LAN IP 修改）
         run: |
           cd openwrt
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+          if [ -f ../scripts/diy2.sh ]; then
+            chmod +x ../scripts/diy2.sh
+            bash ../scripts/diy2.sh
+          else
+            echo "未找到 diy2.sh，跳过"
+          fi
 
-      - name: 【手术室 1】修改默认 LAN IP
+      - name: 进度 55% - diy2 脚本执行完成
+        if: always()
         run: |
-          cd openwrt
-          sed -i "s/192.168.1.1/${NEW_LAN_IP}/g" package/base-files/files/bin/config_generate
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译进度" \
+            --data-urlencode "body=进度: 55%\n阶段: 第三方源已添加，feeds 已更新，LAN IP 已修改\n即将加载配置" \
+            --data-urlencode "sound=glass" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: 注入灵魂 (加载你的 .config)
+      - name: 加载 .config
         run: |
-          [ -e .config ] && mv .config openwrt/.config
+          if [ -e .config ]; then
+            cp .config openwrt/.config
+            echo ".config 已加载"
+          else
+            echo "未找到 .config，使用默认配置"
+          fi
 
-      - name: 下载编译依赖包
+      - name: 集成自定义 files 文件夹 (如果存在)
+        run: |
+          if [ -d "files" ]; then
+            cp -a files openwrt/files
+            echo "自定义 files 文件夹已成功注入。"
+          else
+            echo "未检测到 files 文件夹，跳过注入。"
+          fi
+
+      - name: 进度 60% - 配置加载完成
+        if: always()
+        run: |
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译进度" \
+            --data-urlencode "body=进度: 60%\n阶段: 配置加载完成\n即将开始下载依赖包" \
+            --data-urlencode "sound=glass" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 下载依赖包
         run: |
           cd openwrt
           make defconfig
           make download -j8
           find dl -size -1024c -exec rm -f {} \;
 
-      - name: 【手术室 2】修复 Rust 编译器 Bug
+      - name: 进度 75% - 依赖包下载完成
+        if: always()
         run: |
-          cd openwrt
-          echo "提前解压并预处理 Rust 源码..."
-          make package/feeds/packages/rust/host/prepare V=s || true
-          echo "抹除 serde 包的 Cargo.toml.orig 校验记录，骗过防篡改机制..."
-          find build_dir/ -type f -name ".cargo-checksum.json" -exec sed -i 's/"Cargo.toml.orig":"[^"]*",//g' {} + || true
-          find build_dir/ -type f -name ".cargo-checksum.json" -exec sed -i 's/,"Cargo.toml.orig":"[^"]*"//g' {} + || true
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译进度" \
+            --data-urlencode "body=进度: 75%\n阶段: 依赖包下载完成\n即将开始核心编译（最耗时阶段，约 1-2.5 小时）" \
+            --data-urlencode "sound=glass" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: 开启多核狂飙编译
+      - name: 开启官方标准编译
         id: compile
         run: |
           cd openwrt
@@ -74,7 +122,7 @@ jobs:
           make -j$(($(nproc) + 1)) V=s || make -j1 || make -j1 V=s
           echo "status=success" >> ${GITHUB_OUTPUT}
 
-      - name: 整理固件文件
+      - name: 整理打包出的固件
         id: organize
         if: steps.compile.outputs.status == 'success' && !cancelled()
         run: |
@@ -87,5 +135,30 @@ jobs:
         uses: actions/upload-artifact@main
         if: steps.organize.outputs.status == 'success' && !cancelled()
         with:
-          name: RAX3000M_ClosedSource_Firmware
+          name: RAX3000M_Official_Firmware
           path: ${{ env.FIRMWARE }}
+
+      - name: 编译完成 - 最终结果
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            STATUS="编译成功"
+            SOUND="glass"
+            DETAIL="固件已上传至 Artifacts，可直接下载刷机"
+          else
+            STATUS="编译失败"
+            SOUND="alarm"
+            DETAIL="请点击下方链接查看详细日志定位失败原因"
+          fi
+
+          MESSAGE="${STATUS}
+          仓库: ${{ github.repository }}
+          分支: ${{ github.ref_name }}
+          耗时: ${{ github.run_duration }}
+          ${DETAIL}"
+
+          curl -G "https://api.day.app/genMFkPnbNuNTFRKNxwyze" \
+            --data-urlencode "title=OpenWrt 编译最终结果" \
+            --data-urlencode "body=${MESSAGE}" \
+            --data-urlencode "sound=${SOUND}" \
+            --data-urlencode "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
